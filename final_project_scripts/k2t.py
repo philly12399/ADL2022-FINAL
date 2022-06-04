@@ -23,7 +23,7 @@ drive.mount('/content/drive')
 
 from keytotext import pipeline
 
-nlp = pipeline("k2t-base")
+nlp = pipeline("mrm8488/t5-base-finetuned-common_gen")
 
 import json
 f=open('keywords.json')
