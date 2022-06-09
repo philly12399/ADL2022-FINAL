@@ -10,6 +10,7 @@ from transformers import (
     AutoTokenizer,
     BlenderbotForConditionalGeneration,
     BlenderbotTokenizer,
+    T5ForConditionalGeneration,
 )
 
 
@@ -18,14 +19,14 @@ def parse_args():
 
     parser.add_argument(
         "--model_name_or_path",
-        default="facebook/blenderbot-400M-distill",
+        default="./runs/r1",
         type=str,
         help="model to chat with simulator",
     )
 
-    parser.add_argument("--num_chats", default=4819, type=int, help="the number of round")
+    parser.add_argument("--num_chats", default=980, type=int, help="the number of round")
 
-    parser.add_argument("--split", default="train", type=str, help="split")
+    parser.add_argument("--split", default="test", type=str, help="split")
 
     parser.add_argument("--seed", default=26, type=int, help="random seed")
 
@@ -68,15 +69,20 @@ def preprocess(example):
 if __name__ == "__main__":
     args = parse_args()
     random.seed(args.seed)
-
+    f=open('./final_project_scripts/keywords.json')
+    j=json.load(f)
+    keys=[]
+    for x in j:
+        for y in j[x]:
+            keys.append(y)
     device = "cuda" if torch.cuda.is_available() else "cpu"
-
+    print(device)
     mname = "facebook/blenderbot-400M-distill"
     simulator = BlenderbotForConditionalGeneration.from_pretrained(mname).to(device)
     simulator_tokenizer = BlenderbotTokenizer.from_pretrained(mname)
 
     # load your bot
-    bot = AutoModelForSeq2SeqLM.from_pretrained(args.model_name_or_path).to(device)
+    bot = T5ForConditionalGeneration.from_pretrained(args.model_name_or_path).to(device)
     bot_tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path)
 
     dataset = load_dataset("blended_skill_talk", split=args.split)
@@ -91,7 +97,6 @@ if __name__ == "__main__":
             "previous_utterance",
         ],
     )
-
     if args.interactive_mode:
         for _ in range(args.num_chats):
             dialog = ["hi"]
@@ -143,15 +148,19 @@ if __name__ == "__main__":
                 dialog.append(text)
                 if not args.disable_output_dialog:
                     print(f"\033[0;32;49m {'simulator: ': ^11}{text} \033[0;0m")
-
+                s1="</s> <s>".join(dialog[-3:])
+                s2=keys[random.randint(0,307)]
+                ss=s1+' @ '+s2
                 # you might need to change this line due to the model you use
                 inputs = bot_tokenizer(
-                    ["</s> <s>".join(dialog[-3:])], return_tensors="pt", truncation=True
+                    [ss], return_tensors="pt", padding=True
                 ).to(device)
-                reply_ids = bot.generate(**inputs)
-                text = bot_tokenizer.batch_decode(reply_ids, skip_special_tokens=True)[
-                    0
-                ].strip()
+                output_sequences = bot.generate(
+                    input_ids=inputs["input_ids"],
+                    attention_mask=inputs["attention_mask"],
+                )
+                predictions = bot_tokenizer.batch_decode(output_sequences, skip_special_tokens=True)
+                text = [pred.strip() for pred in predictions][0]
                 dialog.append(text)
                 if not args.disable_output_dialog:
                     print(f"\033[0;33;49m {'bot: ': ^11}{text} \033[0;0m")
