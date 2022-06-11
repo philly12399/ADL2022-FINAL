@@ -1,7 +1,6 @@
 import argparse
 import json
 import random
-from embed.find import find_nearest_keyword
 import torch
 from datasets import load_dataset
 from tqdm import tqdm
@@ -24,7 +23,7 @@ def parse_args():
         help="model to chat with simulator",
     )
 
-    parser.add_argument("--num_chats", default=980, type=int, help="the number of round")
+    parser.add_argument("--num_chats", default=10, type=int, help="the number of round")
 
     parser.add_argument("--split", default="test", type=str, help="split")
     parser.add_argument("--strategy", default="random", type=str)
@@ -38,7 +37,7 @@ def parse_args():
 
     parser.add_argument(
         "--output",
-        default="output_test.jsonl",
+        default="output.jsonl",
         type=str,
         help="file to save the dialogs",
     )
@@ -69,7 +68,7 @@ def preprocess(example):
 if __name__ == "__main__":
     args = parse_args()
     random.seed(args.seed)
-    f=open('./final_project_scripts/keywords.json')
+    f=open('./keywords.json')
     j=json.load(f)
     keys=[]
     for x in j:
@@ -149,10 +148,7 @@ if __name__ == "__main__":
                 if not args.disable_output_dialog:
                     print(f"\033[0;32;49m {'simulator: ': ^11}{text} \033[0;0m")
                 s1="</s> <s>".join(dialog[-3:])
-                if(args.strategy=='random'):
-                    s2=keys[random.randint(0,307)]
-                elif(args.strategy=='embed'):
-                    s2=find_nearest_keyword(s1)
+                s2=keys[random.randint(0,307)]
                 ss=s1+' @ '+s2
                 # you might need to change this line due to the model you use
                 inputs = bot_tokenizer(
@@ -167,7 +163,20 @@ if __name__ == "__main__":
                 dialog.append(text)
                 if not args.disable_output_dialog:
                     print(f"\033[0;33;49m {'bot: ': ^11}{text} \033[0;0m")
-
+            inputs = simulator_tokenizer(
+                    [
+                        "</s> <s>".join(
+                            ([context] + dialog if len(dialog) < 3 else dialog[-3:])
+                        )
+                    ],
+                    return_tensors="pt",
+                    truncation=True,
+                ).to(device)
+            reply_ids = simulator.generate(**inputs)
+            text = simulator_tokenizer.batch_decode(
+                reply_ids, skip_special_tokens=True
+            )[0].strip()
+            dialog.append(text)
             output.append(dialog)
             if not args.disable_output_dialog:
                 print()
