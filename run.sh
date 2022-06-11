@@ -1,1 +1,1 @@
-python3 simulator.py --split test --disable_output_dialog --num_chats 10 
+python3 simulator.py --split test --disable_output_dialog --num_chats 980 

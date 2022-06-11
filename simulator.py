@@ -23,7 +23,7 @@ def parse_args():
         help="model to chat with simulator",
     )
 
-    parser.add_argument("--num_chats", default=10, type=int, help="the number of round")
+    parser.add_argument("--num_chats", default=980, type=int, help="the number of round")
 
     parser.add_argument("--split", default="test", type=str, help="split")
     parser.add_argument("--strategy", default="random", type=str)
