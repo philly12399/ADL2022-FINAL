@@ -18,7 +18,7 @@ def parse_args():
 
     parser.add_argument(
         "--model_name_or_path",
-        default="./runs/r2",
+        default="./model/t5",
         type=str,
         help="model to chat with simulator",
     )
