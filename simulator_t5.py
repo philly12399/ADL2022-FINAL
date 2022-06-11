@@ -1,7 +1,7 @@
 import argparse
 import json
 import random
-
+from embed.find import find_nearest_keyword
 import torch
 from datasets import load_dataset
 from tqdm import tqdm
@@ -19,7 +19,7 @@ def parse_args():
 
     parser.add_argument(
         "--model_name_or_path",
-        default="./runs/r1",
+        default="./runs/r2",
         type=str,
         help="model to chat with simulator",
     )
@@ -27,9 +27,9 @@ def parse_args():
     parser.add_argument("--num_chats", default=980, type=int, help="the number of round")
 
     parser.add_argument("--split", default="test", type=str, help="split")
-
+    parser.add_argument("--strategy", default="random", type=str)
     parser.add_argument("--seed", default=26, type=int, help="random seed")
-
+    
     parser.add_argument(
         "--interactive_mode",
         action="store_true",
@@ -38,7 +38,7 @@ def parse_args():
 
     parser.add_argument(
         "--output",
-        default="output.jsonl",
+        default="output_test.jsonl",
         type=str,
         help="file to save the dialogs",
     )
@@ -76,7 +76,6 @@ if __name__ == "__main__":
         for y in j[x]:
             keys.append(y)
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(device)
     mname = "facebook/blenderbot-400M-distill"
     simulator = BlenderbotForConditionalGeneration.from_pretrained(mname).to(device)
     simulator_tokenizer = BlenderbotTokenizer.from_pretrained(mname)
@@ -97,6 +96,7 @@ if __name__ == "__main__":
             "previous_utterance",
         ],
     )
+    print(dataset)
     if args.interactive_mode:
         for _ in range(args.num_chats):
             dialog = ["hi"]
@@ -149,7 +149,10 @@ if __name__ == "__main__":
                 if not args.disable_output_dialog:
                     print(f"\033[0;32;49m {'simulator: ': ^11}{text} \033[0;0m")
                 s1="</s> <s>".join(dialog[-3:])
-                s2=keys[random.randint(0,307)]
+                if(args.strategy=='random'):
+                    s2=keys[random.randint(0,307)]
+                elif(args.strategy=='embed'):
+                    s2=find_nearest_keyword(s1)
                 ss=s1+' @ '+s2
                 # you might need to change this line due to the model you use
                 inputs = bot_tokenizer(

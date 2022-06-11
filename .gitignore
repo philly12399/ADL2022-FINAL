@@ -1,2 +1,4 @@
 runs/*
 __pycache__*
+embed/glove*
+embed/wordE*
