@@ -163,6 +163,22 @@ if __name__ == "__main__":
                 dialog.append(text)
                 if not args.disable_output_dialog:
                     print(f"\033[0;33;49m {'bot: ': ^11}{text} \033[0;0m")
+            inputs = simulator_tokenizer(
+                [
+                    "</s> <s>".join(
+                        ([context] + dialog if len(dialog) < 3 else dialog[-3:])
+                    )
+                ],
+                return_tensors="pt",
+                truncation=True,
+            ).to(device)
+            reply_ids = simulator.generate(**inputs)
+            text = simulator_tokenizer.batch_decode(
+                reply_ids, skip_special_tokens=True
+            )[0].strip()
+            dialog.append(text)
+            if not args.disable_output_dialog:
+                    print(f"\033[0;32;49m {'simulator: ': ^11}{text} \033[0;0m")
             output.append(dialog)
             if not args.disable_output_dialog:
                 print()
